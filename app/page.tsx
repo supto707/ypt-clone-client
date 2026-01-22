@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/hooks/useSocket';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { StudyTimer } from '@/components/study-timer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FocusMode } from '@/components/focus-mode';
 import { SubjectsManager } from '@/components/subjects-manager';
@@ -17,8 +17,8 @@ import { Planner } from '@/components/planner';
 import { Settings } from '@/components/settings';
 import { DDayManager } from '@/components/d-day';
 import { PresenceManager } from '@/components/presence-manager';
+import { FriendsOnline } from '@/components/friends-online';
 import { PinnedTimer } from '@/components/pinned-timer';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Users, Target, Clock, Calendar, Zap, Award, Flame, PieChart as PieIcon } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -35,172 +35,180 @@ type AppView =
 // Landing Page Component
 function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 font-sans selection:bg-primary/20">
       {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="w-6 h-6 text-primary" />
-            <span className="text-xl font-bold">YPT</span>
+            <div className="relative">
+              <Clock className="w-6 h-6 text-primary" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full animate-pulse border border-background"></span>
+            </div>
+            <span className="text-xl font-bold tracking-tight">YPT</span>
           </div>
           <nav className="flex items-center gap-4">
             <Link href="/login">
-              <Button variant="ghost">Sign In</Button>
+              <Button variant="ghost" className="font-medium">Sign In</Button>
             </Link>
             <Link href="/register">
-              <Button>Get Started</Button>
+              <Button className="font-bold shadow-lg shadow-primary/20">Get Started</Button>
             </Link>
           </nav>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
-            Track Your Study Time,
-            <span className="text-primary"> Boost Your Productivity</span>
+      <section className="container mx-auto px-4 py-24 md:py-32 text-center relative overflow-hidden">
+        {/* Abstract Background Elements */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[100px] -z-10 animate-pulse" />
+
+        <div className="max-w-4xl mx-auto space-y-8 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/50 border border-border/50 backdrop-blur-sm mb-4">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">12,405 Students Focusing Live</span>
+          </div>
+
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none">
+            Don't Study <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-primary/50">Alone.</span>
           </h1>
-          <p className="text-xl text-muted-foreground">
-            Join thousands of students using YPT to stay focused, compete with friends,
-            and achieve their academic goals.
+
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
+            Join the largest real-time study community. See who's online, challenge your friends, and stay accountable together.
           </p>
-          <div className="flex gap-4 justify-center pt-4">
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
             <Link href="/register">
-              <Button size="lg" className="text-lg px-8">
-                Start Studying Free
+              <Button size="lg" className="h-14 px-10 text-lg rounded-full font-bold shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                Join a Group Study
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="text-lg px-8">
-                Sign In
+              <Button size="lg" variant="outline" className="h-14 px-10 text-lg rounded-full border-2 hover:bg-secondary/50 font-bold transition-all">
+                Explore Public Groups
               </Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Everything You Need to Succeed</h2>
-          <p className="text-muted-foreground text-lg">
-            Powerful features to help you stay focused and motivated
+      {/* Features Grid - Reordered for Social Focus */}
+      <section className="container mx-auto px-4 py-24">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold mb-4 tracking-tight">Study Together, Miles Apart</h2>
+          <p className="text-muted-foreground text-xl max-w-2xl mx-auto">
+            Experience the motivation of a library from your bedroom.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          <Card className="border-2 hover:border-primary transition-colors">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Clock className="w-6 h-6 text-primary" />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {/* Card 1: Real-time Groups (Priority) */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+            <CardContent className="pt-8 p-8">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <Users className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Study Timer</h3>
-              <p className="text-muted-foreground">
-                Track your study sessions with precision. Start, pause, and stop with ease.
+              <h3 className="text-2xl font-bold mb-3">Live Study Groups</h3>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                See your friends' status in real-time. Are they studying? Sleeping? Join their room and get motivated instantly.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2 hover:border-primary transition-colors">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Target className="w-6 h-6 text-primary" />
+          {/* Card 2: Rankings (Competition) */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+            <CardContent className="pt-8 p-8">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <TrendingUp className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Subject Management</h3>
-              <p className="text-muted-foreground">
-                Organize your studies with color-coded subjects and track time per topic.
+              <h3 className="text-2xl font-bold mb-3">Compete & Climb</h3>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                Check the daily, weekly, and monthly leaderboards. Friendly competition is the best accountability partner.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2 hover:border-primary transition-colors">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Users className="w-6 h-6 text-primary" />
+          {/* Card 3: Focus Status (Presence) */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+            <CardContent className="pt-8 p-8">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <Flame className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Study Groups</h3>
-              <p className="text-muted-foreground">
-                Join groups and see who's studying in real-time. Stay motivated together.
+              <h3 className="text-2xl font-bold mb-3">Real-time Accountability</h3>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                The "Focus Mode" status lets everyone know you're serious. Don't be the one ending your session early!
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2 hover:border-primary transition-colors">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="w-6 h-6 text-primary" />
+          {/* Card 4: Detailed Stats (Utility) */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+            <CardContent className="pt-8 p-8">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <PieIcon className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Rankings</h3>
-              <p className="text-muted-foreground">
-                Compete on daily, weekly, and monthly leaderboards. Challenge yourself!
+              <h3 className="text-2xl font-bold mb-3">Visual Insights</h3>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                Track your study patterns. See exactly how much time you spent on Math vs. History compared to your group.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2 hover:border-primary transition-colors">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Calendar className="w-6 h-6 text-primary" />
+          {/* Card 5: D-Day (Goal) */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+            <CardContent className="pt-8 p-8">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <Calendar className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Insights & Stats</h3>
-              <p className="text-muted-foreground">
-                Visualize your progress with calendar heatmaps and detailed analytics.
+              <h3 className="text-2xl font-bold mb-3">Shared Goals</h3>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                Set D-Days for exams and see your group's collective countdown. We're all in this together.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2 hover:border-primary transition-colors">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6 text-primary" />
+          {/* Card 6: Mobile (Convenience) */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+            <CardContent className="pt-8 p-8">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <Award className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Focus Mode</h3>
-              <p className="text-muted-foreground">
-                Minimize distractions with focus mode. Stay in the zone while studying.
+              <h3 className="text-2xl font-bold mb-3">Gamified Focus</h3>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                Earn badges and consistency streaks. Make studying addictive (in a good way).
               </p>
             </CardContent>
           </Card>
+
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="container mx-auto px-4 py-20 bg-primary/5 rounded-2xl my-20">
-        <div className="grid md:grid-cols-3 gap-8 text-center">
-          <div>
-            <div className="text-4xl font-bold text-primary mb-2">10K+</div>
-            <div className="text-muted-foreground">Active Students</div>
+      {/* Social Proof Stats */}
+      <section className="container mx-auto px-4 py-20 mb-20">
+        <div className="bg-primary/5 rounded-3xl p-12 md:p-20 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-12">Join the Movement</h2>
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="space-y-2">
+              <div className="text-5xl md:text-6xl font-black text-primary tracking-tighter">10K+</div>
+              <div className="text-xl font-medium text-muted-foreground uppercase tracking-widest">Active Peers</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-5xl md:text-6xl font-black text-primary tracking-tighter">1M+</div>
+              <div className="text-xl font-medium text-muted-foreground uppercase tracking-widest">Shared Hours</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-5xl md:text-6xl font-black text-primary tracking-tighter">500+</div>
+              <div className="text-xl font-medium text-muted-foreground uppercase tracking-widest">Active Groups</div>
+            </div>
           </div>
-          <div>
-            <div className="text-4xl font-bold text-primary mb-2">1M+</div>
-            <div className="text-muted-foreground">Study Hours Tracked</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-primary mb-2">500+</div>
-            <div className="text-muted-foreground">Study Groups</div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <h2 className="text-4xl font-bold">Ready to Start Studying?</h2>
-          <p className="text-xl text-muted-foreground">
-            Join YPT today and take control of your study time. It's completely free!
-          </p>
-          <Link href="/register">
-            <Button size="lg" className="text-lg px-12">
-              Create Free Account
-            </Button>
-          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8 mt-20">
+      <footer className="border-t border-border/50 py-12">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© 2026 YPT. Built for students, by students.</p>
+          <p className="font-semibold mb-2">Developed for the ambitious.</p>
+          <p className="text-sm opacity-60">© 2026 YPT. All rights reserved.</p>
         </div>
       </footer>
     </div>
@@ -305,215 +313,99 @@ function Dashboard() {
             onLogout={handleLogout}
           />
 
-          <main className="flex-1 overflow-auto bg-background">
+          <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top_right,var(--color-primary-foreground),transparent),radial-gradient(circle_at_bottom_left,var(--color-secondary),transparent)] bg-background">
             {currentView === 'dashboard' && (
-              <div className="p-8">
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-foreground mb-2">
-                    Welcome back, {user?.username}!
-                  </h1>
-                  <p className="text-muted-foreground">Keep up your studying streak.</p>
+              <div className="h-full flex flex-col md:flex-row p-6 md:p-8 gap-8 relative overflow-hidden">
+                {/* Background Atmosphere */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,var(--color-primary-foreground),transparent)] opacity-5 pointer-events-none" />
+
+                {/* Left Column: Timer - Aligned Left */}
+                <div className="flex-1 flex flex-col items-start justify-start z-10 min-w-0">
+                  <StudyTimer
+                    onFocusMode={handleFocusMode}
+                    onSessionComplete={handleSessionComplete}
+                  />
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-8">
-                  {/* Timer Section */}
-                  <div className="flex-1 flex items-center justify-center min-h-[500px] bg-card rounded-lg border border-border p-8">
-                    <div className="w-full flex justify-center">
-                      <StudyTimer
-                        onFocusMode={handleFocusMode}
-                        onSessionComplete={handleSessionComplete}
-                      />
-                    </div>
-                  </div>
+                {/* Right Column: Widgets - Restored */}
+                <div className="w-full md:w-80 lg:w-96 flex flex-col gap-6 z-10 h-full overflow-y-auto pb-20 no-scrollbar">
+                  <div className="flex flex-col gap-6 opacity-90 hover:opacity-100 transition-opacity duration-300">
 
-                  {/* Stats Section */}
-                  <div className="lg:w-80 space-y-6">
-                    {/* Quick Stats */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Target className="w-4 h-4" />
-                          Today
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-muted-foreground">Time Studied</span>
-                            <span className="font-medium">
-                              {todayStats?.totalHours || '0.0'}h
-                            </span>
+                    {/* Stats Summary Widget */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                      <CardContent className="p-6 space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                            <TrendingUp className="w-5 h-5" />
                           </div>
-                          <div className="w-full bg-secondary rounded-full h-2">
-                            <div
-                              className="bg-primary h-full rounded-full"
-                              style={{
-                                width: `${Math.min(((todayStats?.totalMinutes || 0) / 120) * 100, 100)}%`
-                              }}
-                            />
+                          <h3 className="font-bold text-sm uppercase tracking-wider">Daily Progress</h3>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Total Focus</p>
+                            <p className="text-2xl font-black tabular-nums">
+                              {Math.floor((todayStats?.totalStudyTime || 0) / 60)}<span className="text-sm font-normal text-muted-foreground ml-0.5">h</span> {(todayStats?.totalStudyTime || 0) % 60}<span className="text-sm font-normal text-muted-foreground ml-0.5">m</span>
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Streak</p>
+                            <p className="text-2xl font-black tabular-nums">{todayStats?.streak || 0} <span className="text-[10px] font-bold text-muted-foreground align-middle">DAYS</span></p>
                           </div>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Sessions</span>
-                          <span className="font-medium">{todayStats?.sessionCount || 0}</span>
+                      </CardContent>
+                    </Card>
+
+                    {/* Focus Distribution Widget */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                      <CardContent className="p-6 space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                            <PieIcon className="w-5 h-5" />
+                          </div>
+                          <h3 className="font-bold text-sm uppercase tracking-wider">Distribution</h3>
                         </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Weekly Stats */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4" />
-                          This Week
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={180}>
-                          <BarChart data={weeklyData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--color-border))" />
-                            <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                            <YAxis tick={{ fontSize: 12 }} />
-                            <Tooltip
-                              contentStyle={{
-                                backgroundColor: 'hsl(var(--color-card))',
-                                border: '1px solid hsl(var(--color-border))',
-                              }}
-                              formatter={(value) => `${value}h`}
-                            />
-                            <Bar dataKey="hours" fill="hsl(var(--color-primary))" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-
-                    {/* Socket Connection Status */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Flame className="w-4 h-4 text-orange-500" />
-                          Study Streak
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-3">
-                          <div className="text-3xl font-bold">{todayStats?.streak || 0}</div>
-                          <div className="text-sm text-muted-foreground">Days in a row</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Achievements */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Award className="w-4 h-4 text-yellow-500" />
-                          Achievements
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                          {todayStats?.badges?.map((badge: any) => (
-                            <div
-                              key={badge.id}
-                              className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md text-xs font-medium"
-                              title={badge.title}
-                            >
-                              <span>{badge.icon}</span>
-                              <span>{badge.title}</span>
-                            </div>
-                          ))}
-                          {(!todayStats?.badges || todayStats.badges.length === 0) && (
-                            <p className="text-xs text-muted-foreground italic">No achievements yet. Keep studying!</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Distribution Pie Chart */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <PieIcon className="w-4 h-4 text-blue-500" />
-                          Distribution
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="h-[180px] w-full">
+                        <div className="space-y-3">
                           {distData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={distData}
-                                  innerRadius={40}
-                                  outerRadius={60}
-                                  paddingAngle={5}
-                                  dataKey="value"
-                                >
-                                  {distData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                  ))}
-                                </Pie>
-                                <Tooltip
-                                  formatter={(value: number) => `${value} min`}
-                                  contentStyle={{ backgroundColor: 'hsl(var(--color-card))', borderRadius: '8px', border: '1px solid hsl(var(--color-border))' }}
-                                />
-                              </PieChart>
-                            </ResponsiveContainer>
+                            (() => {
+                              const total = distData.reduce((acc, curr) => acc + curr.value, 0) || 1;
+                              return distData.slice(0, 4).map((item: any, index: number) => (
+                                <div key={index} className="flex flex-col gap-1">
+                                  <div className="flex justify-between text-xs font-medium">
+                                    <span>{item.name}</span>
+                                    <span className="tabular-nums">
+                                      {Math.round((item.value / total) * 100)}%
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{ width: `${(item.value / total) * 100}%`, backgroundColor: item.color }}
+                                    />
+                                  </div>
+                                </div>
+                              ));
+                            })()
                           ) : (
-                            <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic">
-                              No sessions today
-                            </div>
+                            <p className="text-xs text-muted-foreground italic text-center py-2">No data yet</p>
                           )}
                         </div>
-                        <div className="mt-2 space-y-1">
-                          {distData.slice(0, 3).map((d, i) => (
-                            <div key={i} className="flex items-center justify-between text-[10px]">
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
-                                <span className="truncate max-w-[100px]">{d.name}</span>
-                              </div>
-                              <span className="font-mono">{Math.round((d.value / (todayStats?.totalMinutes || 1)) * 100)}%</span>
-                            </div>
-                          ))}
-                        </div>
                       </CardContent>
                     </Card>
 
-                    {/* D-Day Tracker */}
+                    {/* Friends/Groups Online Widget */}
+                    <FriendsOnline />
+
                     <DDayManager />
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          Connection
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-400'}`} />
-                          <span className="text-sm text-muted-foreground">
-                            {connected ? 'Connected' : 'Disconnected'}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
                   </div>
                 </div>
               </div>
             )}
 
             {currentView === 'subjects' && <SubjectsManager />}
-
             {currentView === 'planner' && <Planner />}
-
             {currentView === 'groups' && <GroupStudy />}
-
             {currentView === 'rankings' && <Rankings />}
-
             {currentView === 'analytics' && <Analytics />}
-
             {currentView === 'settings' && <Settings />}
           </main>
         </div>

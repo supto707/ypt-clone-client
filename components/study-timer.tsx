@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Zap, AlertTriangle, Coffee } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, AlertTriangle, Coffee, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
+import { Card, CardContent } from './ui/card';
 import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import { toast } from 'sonner';
@@ -232,150 +233,129 @@ export function StudyTimer({ onFocusMode, onSessionComplete }: StudyTimerProps) 
   );
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-8 w-full">
-      {/* Mode Status */}
-      <div className="flex items-center gap-4 bg-muted/50 px-4 py-2 rounded-full border border-border shadow-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pomodoro</span>
-          <Switch checked={isPomodoro} onCheckedChange={setIsPomodoro} disabled={isRunning} />
-        </div>
-        <div className="w-px h-4 bg-border" />
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Strict Mode</span>
-          <Switch checked={isStrict} onCheckedChange={setIsStrict} disabled={isRunning} />
-        </div>
-        {isPomodoro && (
-          <div className="flex items-center gap-2 border-l border-border pl-4">
-            {isBreak ? <Coffee className="w-4 h-4 text-green-500" /> : <Zap className="w-4 h-4 text-primary" />}
-            <span className="text-xs font-bold uppercase tracking-wider">
-              {isBreak ? 'Break' : 'Focus'}
-            </span>
+    <div className="w-full flex justify-start">
+      <Card className="w-full max-w-4xl bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl">
+        <CardContent className="p-12 md:p-20 flex flex-col items-center space-y-16">
+          {/* Typographic Countdown Display */}
+          <div className="flex flex-col items-center">
+            <div className="flex items-baseline gap-4 md:gap-8">
+              <div className="flex flex-col items-center">
+                <span className="text-[clamp(4rem,10vw,8rem)] font-black tracking-tight tabular-nums leading-none text-foreground">
+                  {formatTime(seconds).split(':')[0]}
+                </span>
+                <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground mt-4">
+                  Minutes
+                </span>
+              </div>
+
+              <span className="text-[clamp(3rem,8vw,6rem)] font-light opacity-20 translate-y-[-1rem]">
+                :
+              </span>
+
+              <div className="flex flex-col items-center">
+                <span className="text-[clamp(4rem,10vw,8rem)] font-black tracking-tight tabular-nums leading-none text-foreground">
+                  {formatTime(seconds).split(':')[1]}
+                </span>
+                <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground mt-4">
+                  Seconds
+                </span>
+              </div>
+            </div>
+
+            {/* Status Indicator */}
+            <div className="mt-12 flex items-center gap-3 bg-secondary/50 px-4 py-2 rounded-full">
+              <span className={`w-2 h-2 rounded-full ${isRunning ? 'bg-primary animate-pulse' : 'bg-muted-foreground/30'}`} />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                {isRunning ? (isBreak ? 'Break Mode' : 'Focus Mode') : 'Ready to Start'}
+              </span>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Timer Display */}
-      <div className="relative w-64 h-64 flex items-center justify-center">
-        {/* Progress Ring */}
-        <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 256 256">
-          <circle
-            cx="128"
-            cy="128"
-            r="120"
-            fill="none"
-            stroke="hsl(var(--color-border))"
-            strokeWidth="8"
-          />
-          <motion.circle
-            cx="128"
-            cy="128"
-            r="120"
-            fill="none"
-            stroke={isBreak ? "hsl(var(--color-green-500))" : "hsl(var(--color-primary))"}
-            strokeWidth="8"
-            strokeLinecap="round"
-            initial={{ strokeDasharray: 2 * Math.PI * 120, strokeDashoffset: 2 * Math.PI * 120 }}
-            animate={{
-              strokeDashoffset: isRunning ? (isPomodoro ? (2 * Math.PI * 120) * (1 - seconds / (isBreak ? 300 : 1500)) : 0) : 2 * Math.PI * 120,
-            }}
-            transition={{ duration: 1 }}
-          />
-        </svg>
-
-        {/* Timer Text */}
-        <div className="text-center z-10 flex flex-col items-center">
-          <div className={`text-5xl font-bold tabular-nums ${isIdle ? 'text-muted-foreground animate-pulse' : 'text-foreground'}`}>
-            {formatTime(seconds)}
-          </div>
-          <p className="text-sm text-muted-foreground mt-2 font-medium flex items-center gap-1">
-            {isRunning ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-                {isBreak ? 'Relaxing...' : (isIdle ? 'Idle Detected' : 'Studying...')}
-              </>
-            ) : 'Ready to Start'}
-          </p>
-        </div>
-      </div>
-
-      {/* Subject Selector */}
-      <div className="w-full max-w-sm space-y-2">
-        <label className="text-sm font-medium text-foreground block">Select Subject</label>
-        <Select
-          value={selectedSubjectId}
-          onValueChange={setSelectedSubjectId}
-          disabled={isRunning}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a subject" />
-          </SelectTrigger>
-          <SelectContent>
-            {subjects.map((sub) => (
-              <SelectItem key={sub._id} value={sub._id}>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: sub.color }} />
-                  {sub.title}
+          {/* Subject Context Selector */}
+          <div className="w-full max-w-xs">
+            <Select
+              value={selectedSubjectId}
+              onValueChange={setSelectedSubjectId}
+              disabled={isRunning}
+            >
+              <SelectTrigger className="w-full h-12 bg-background border-input text-sm font-medium hover:border-primary/50 transition-colors focus:ring-1 focus:ring-primary">
+                <div className="flex items-center gap-2 mx-auto">
+                  <SelectValue placeholder="Select Subject" />
                 </div>
-              </SelectItem>
-            ))}
-            {subjects.length === 0 && (
-              <SelectItem value="none" disabled>No subjects found. Create one first!</SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-      </div>
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((sub) => (
+                  <SelectItem key={sub._id} value={sub._id}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sub.color }} />
+                      <span>{sub.title}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* Controls */}
-      <div className="flex gap-4">
-        <Button
-          onClick={handleToggleTimer}
-          size="lg"
-          className={`${isRunning ? 'bg-destructive hover:bg-destructive/90' : 'bg-primary hover:bg-primary/90'} text-white px-8 h-14 text-lg shadow-lg hover:shadow-xl transition-all`}
-        >
-          {isRunning ? <Pause className="w-6 h-6 mr-2" /> : <Play className="w-6 h-6 mr-2" />}
-          {isRunning ? 'Stop Session' : 'Start Study'}
-        </Button>
+          {/* Controls - Interactive Buttons */}
+          <div className="flex flex-col items-center gap-8 w-full">
+            <Button
+              onClick={handleToggleTimer}
+              size="lg"
+              className={`w-full max-w-sm h-16 text-lg font-bold tracking-widest uppercase transition-all duration-300 shadow-lg ${isRunning
+                ? 'bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border-destructive/20 border-2'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02]'
+                }`}
+            >
+              {isRunning ? (
+                <span className="flex items-center gap-3">
+                  <Pause className="w-5 h-5 fill-current" />
+                  Stop Session
+                </span>
+              ) : (
+                <span className="flex items-center gap-3">
+                  <Play className="w-5 h-5 fill-current" />
+                  Start Focus
+                </span>
+              )}
+            </Button>
 
-        <Button
-          onClick={handleReset}
-          size="lg"
-          variant="outline"
-          disabled={isRunning}
-          className="border-border hover:bg-muted h-14"
-        >
-          <RotateCcw className="w-5 h-5 mr-2" />
-          Reset
-        </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                disabled={isRunning}
+                className="h-10 px-6 text-xs font-bold tracking-wider uppercase hover:bg-secondary"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                Reset
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onFocusMode}
+                className="h-10 px-6 text-xs font-bold tracking-wider uppercase border-primary/20 text-primary hover:bg-primary/5"
+              >
+                <Zap className="w-3.5 h-3.5 mr-2" />
+                Zen Mode
+              </Button>
+            </div>
+          </div>
 
-        <Button
-          onClick={onFocusMode}
-          size="lg"
-          variant="secondary"
-          className="bg-accent hover:bg-accent/90 text-accent-foreground h-14"
-        >
-          <Zap className="w-5 h-5 mr-2" />
-          Focus
-        </Button>
-      </div>
+          {/* System Settings */}
+          <div className="flex items-center gap-8 pt-4 border-t w-full justify-center">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pomodoro</span>
+              <Switch checked={isPomodoro} onCheckedChange={setIsPomodoro} disabled={isRunning} />
+            </div>
+            <div className="w-px h-4 bg-border" />
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Strict Mode</span>
+              <Switch checked={isStrict} onCheckedChange={setIsStrict} disabled={isRunning} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
-}
-
-function Loader2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
-  )
 }

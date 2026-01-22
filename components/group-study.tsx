@@ -28,6 +28,7 @@ interface Group {
   memberCount?: number;
   rules?: string;
   timeZone?: string;
+  isMember?: boolean;
 }
 
 interface GroupMember {
@@ -150,30 +151,47 @@ export function GroupStudy() {
         }));
       });
 
-      socket.on('groupStatus', (data: any) => {
-        console.log('Socket: groupStatus received for group:', data.groupId, 'Studiers:', data.studyingUsers);
-        setMembers(prev => {
-          console.log('Current members accurately loaded:', prev.length);
-          return prev.map(member => {
-            const status = data.studyingUsers.find((u: any) => u.userId === member.userId._id);
-            if (status) {
-              console.log('Mapping study status for user:', member.userId.username);
-              const startTime = new Date(status.sessionData.startTime).getTime();
-              const now = Date.now();
-              const base = status.sessionData.accumulatedSeconds || 0;
-              const elapsed = Math.floor((now - startTime) / 1000);
+      socket.on('groupStatus', (data: { groupId: string, studyingUsers?: any[], onlineMembers?: any[] }) => {
+        // Support both old and new payload structures
+        const users = data.onlineMembers || data.studyingUsers || [];
+        // console.log('Socket: groupStatus received for group:', data.groupId, 'Members:', users);
+
+        if (selectedGroup && data.groupId === selectedGroup._id) {
+          setMembers(prev => {
+            return prev.map(member => {
+              const status = users.find((u: any) => u.userId === member.userId._id);
+
+              if (status && status.sessionData) {
+                // User is studying
+                const startTime = new Date(status.sessionData.startTime).getTime();
+                const now = Date.now();
+                const base = status.sessionData.accumulatedSeconds || 0;
+                // We rely on the component's internal timer to click up from this base, 
+                // effectively we just need to re-sync the start params
+
+                return {
+                  ...member,
+                  isStudying: true,
+                  currentSubject: status.sessionData.subjectTitle,
+                  baseDuration: base,
+                  startTime: status.sessionData.startTime
+                };
+              } else if (status) {
+                // User is online but not studying (or Idle) -> Stop their timer in UI if it was running
+                return {
+                  ...member,
+                  isStudying: false
+                };
+              }
+
+              // Not in the online list -> Assume Offline
               return {
                 ...member,
-                isStudying: true,
-                currentSubject: status.sessionData.subjectTitle,
-                baseDuration: base,
-                studyDuration: base + elapsed,
-                startTime: status.sessionData.startTime
+                isStudying: false
               };
-            }
-            return member;
+            });
           });
-        });
+        }
       });
 
       socket.on('userDisconnected', (data: any) => {
@@ -261,9 +279,7 @@ export function GroupStudy() {
       const publicGroupsResponse = await api.get('/groups/search', {
         params: { q: searchQuery || '' }
       });
-      setPublicGroups(publicGroupsResponse.data.filter((g: Group) =>
-        !myGroupsResponse.data.some((mg: Group) => mg._id === g._id)
-      ));
+      setPublicGroups(publicGroupsResponse.data);
     } catch (error) {
       console.error('Error fetching groups:', error);
       toast.error('Failed to load groups');
@@ -880,11 +896,22 @@ export function GroupStudy() {
                     )}
                     <Button
                       size="sm"
-                      onClick={() => handleJoinGroup(group._id)}
+                      onClick={() => !group.isMember && handleJoinGroup(group._id)}
                       className="w-full"
+                      variant={group.isMember ? "outline" : "default"}
+                      disabled={group.isMember}
                     >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Join Group
+                      {group.isMember ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2" />
+                          Joined
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Join Group
+                        </>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>

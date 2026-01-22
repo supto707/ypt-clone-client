@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Settings, Users, TrendingUp, LogOut } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const weeklyData = [
   { day: 'Mon', hours: 2.5 },
@@ -66,127 +67,147 @@ export function Dashboard({
         </div>
       </header>
 
+
+
+      // ... (imports remain)
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentView === 'timer' ? (
-          // Timer View
-          <div className="flex flex-col items-center justify-center min-h-[70vh]">
-            <StudyTimer onFocusMode={onFocusMode} />
-          </div>
-        ) : (
-          // Dashboard View
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Daily Goal Progress */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="text-base">Today's Goal</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-foreground">3 hours</span>
-                    <span className="text-muted-foreground">2.5 hours done</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
-                    <div className="bg-primary h-full" style={{ width: '83%' }} />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">83% of daily goal complete</p>
-              </CardContent>
-            </Card>
-
-            {/* Stats */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="text-base">This Week</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total Sessions</span>
-                    <span className="font-semibold text-foreground">28</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Study Hours</span>
-                    <span className="font-semibold text-foreground">18.6h</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Avg Per Session</span>
-                    <span className="font-semibold text-foreground">40m</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Leaderboard */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Group Rank
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-accent/20 rounded">
-                    <span className="text-sm font-medium text-accent-foreground">You</span>
-                    <span className="text-sm font-semibold">#3</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Next rank: 2.1h away</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Weekly Chart */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Weekly Study Hours
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={weeklyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--color-border))" />
-                    <XAxis dataKey="day" stroke="hsl(var(--color-muted-foreground))" />
-                    <YAxis stroke="hsl(var(--color-muted-foreground))" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--color-card))',
-                        border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '8px',
-                      }}
-                      formatter={(value) => `${value}h`}
-                    />
-                    <Bar dataKey="hours" fill="hsl(var(--color-primary))" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Subject Breakdown */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="text-base">Top Subjects</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { name: 'Mathematics', hours: 6.5 },
-                    { name: 'English', hours: 5.2 },
-                    { name: 'Science', hours: 4.1 },
-                  ].map((subject) => (
-                    <div key={subject.name} className="flex items-center justify-between">
-                      <span className="text-sm text-foreground">{subject.name}</span>
-                      <span className="text-xs font-medium text-primary">{subject.hours}h</span>
+        <AnimatePresence mode="wait">
+          {currentView === 'timer' ? (
+            // Timer View
+            <motion.div
+              key="timer"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col items-center justify-center py-4"
+            >
+              <StudyTimer onFocusMode={onFocusMode} />
+            </motion.div>
+          ) : (
+            // Dashboard View
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+            >
+              {/* Daily Goal Progress */}
+              <Card className="lg:col-span-1 hover-card">
+                <CardHeader>
+                  <CardTitle className="text-base">Today's Goal</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-foreground">3 hours</span>
+                      <span className="text-muted-foreground">2.5 hours done</span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                    <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
+                      <div className="bg-primary h-full" style={{ width: '83%' }} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">83% of daily goal complete</p>
+                </CardContent>
+              </Card>
+
+              {/* Stats */}
+              <Card className="lg:col-span-1 hover-card">
+                <CardHeader>
+                  <CardTitle className="text-base">This Week</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Total Sessions</span>
+                      <span className="font-semibold text-foreground">28</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Study Hours</span>
+                      <span className="font-semibold text-foreground">18.6h</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Avg Per Session</span>
+                      <span className="font-semibold text-foreground">40m</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Leaderboard */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Group Rank
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-accent/20 rounded">
+                      <span className="text-sm font-medium text-accent-foreground">You</span>
+                      <span className="text-sm font-semibold">#3</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Next rank: 2.1h away</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Weekly Chart */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Weekly Study Hours
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={weeklyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--color-border))" />
+                      <XAxis dataKey="day" stroke="hsl(var(--color-muted-foreground))" />
+                      <YAxis stroke="hsl(var(--color-muted-foreground))" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--color-card))',
+                          border: '1px solid hsl(var(--color-border))',
+                          borderRadius: '8px',
+                        }}
+                        formatter={(value) => `${value}h`}
+                      />
+                      <Bar dataKey="hours" fill="hsl(var(--color-primary))" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Subject Breakdown */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-base">Top Subjects</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { name: 'Mathematics', hours: 6.5 },
+                      { name: 'English', hours: 5.2 },
+                      { name: 'Science', hours: 4.1 },
+                    ].map((subject) => (
+                      <div key={subject.name} className="flex items-center justify-between">
+                        <span className="text-sm text-foreground">{subject.name}</span>
+                        <span className="text-xs font-medium text-primary">{subject.hours}h</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
