@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/hooks/useSocket';
 import { SidebarNav } from '@/components/sidebar-nav';
@@ -219,9 +221,15 @@ function LandingPage() {
 function Dashboard() {
   const { user, logout } = useAuth();
   const { socket, connected } = useSocket();
-  const [currentView, setCurrentView] = useState<AppView>('dashboard');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get view from URL or default to 'dashboard'
+  const currentView = (searchParams.get('view') as AppView) || 'dashboard';
+
   const [todayStats, setTodayStats] = useState<any>(null);
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -278,25 +286,36 @@ function Dashboard() {
 
   const distData = getDistributionData();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    // Add artificial delay for better UX (so the user sees the loading state)
+    await new Promise(resolve => setTimeout(resolve, 800));
     logout();
   };
 
   const handleFocusMode = () => {
-    setCurrentView('focus');
+    handleNavigate('focus');
   };
 
   const handleExitFocusMode = () => {
-    setCurrentView('dashboard');
+    handleNavigate('dashboard');
   };
 
   const handleNavigate = (view: string) => {
-    setCurrentView(view as AppView);
+    // Update URL to reflect state
+    router.push(`/?view=${view}`);
   };
 
   const handleSessionComplete = () => {
     fetchTodayStats();
     fetchWeeklyStats();
+  };
+
+  // Animation variants
+  const pageVariants = {
+    initial: { opacity: 0, x: -10 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 10 }
   };
 
   return (
@@ -314,99 +333,133 @@ function Dashboard() {
           />
 
           <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top_right,var(--color-primary-foreground),transparent),radial-gradient(circle_at_bottom_left,var(--color-secondary),transparent)] bg-background">
-            {currentView === 'dashboard' && (
-              <div className="h-full flex flex-col md:flex-row p-6 md:p-8 gap-8 relative overflow-hidden">
-                {/* Background Atmosphere */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,var(--color-primary-foreground),transparent)] opacity-5 pointer-events-none" />
+            <AnimatePresence mode="wait">
+              {currentView === 'dashboard' && (
+                <motion.div
+                  key="dashboard"
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  variants={pageVariants}
+                  transition={{ duration: 0.2 }}
+                  className="h-full flex flex-col md:flex-row p-6 md:p-8 gap-8 relative overflow-hidden"
+                >
+                  {/* Background Atmosphere */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,var(--color-primary-foreground),transparent)] opacity-5 pointer-events-none" />
 
-                {/* Left Column: Timer - Aligned Left */}
-                <div className="flex-1 flex flex-col items-start justify-start z-10 min-w-0">
-                  <StudyTimer
-                    onFocusMode={handleFocusMode}
-                    onSessionComplete={handleSessionComplete}
-                  />
-                </div>
-
-                {/* Right Column: Widgets - Restored */}
-                <div className="w-full md:w-80 lg:w-96 flex flex-col gap-6 z-10 h-full overflow-y-auto pb-20 no-scrollbar">
-                  <div className="flex flex-col gap-6 opacity-90 hover:opacity-100 transition-opacity duration-300">
-
-                    {/* Stats Summary Widget */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                      <CardContent className="p-6 space-y-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                            <TrendingUp className="w-5 h-5" />
-                          </div>
-                          <h3 className="font-bold text-sm uppercase tracking-wider">Daily Progress</h3>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Total Focus</p>
-                            <p className="text-2xl font-black tabular-nums">
-                              {Math.floor((todayStats?.totalStudyTime || 0) / 60)}<span className="text-sm font-normal text-muted-foreground ml-0.5">h</span> {(todayStats?.totalStudyTime || 0) % 60}<span className="text-sm font-normal text-muted-foreground ml-0.5">m</span>
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Streak</p>
-                            <p className="text-2xl font-black tabular-nums">{todayStats?.streak || 0} <span className="text-[10px] font-bold text-muted-foreground align-middle">DAYS</span></p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Focus Distribution Widget */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                      <CardContent className="p-6 space-y-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                            <PieIcon className="w-5 h-5" />
-                          </div>
-                          <h3 className="font-bold text-sm uppercase tracking-wider">Distribution</h3>
-                        </div>
-                        <div className="space-y-3">
-                          {distData.length > 0 ? (
-                            (() => {
-                              const total = distData.reduce((acc, curr) => acc + curr.value, 0) || 1;
-                              return distData.slice(0, 4).map((item: any, index: number) => (
-                                <div key={index} className="flex flex-col gap-1">
-                                  <div className="flex justify-between text-xs font-medium">
-                                    <span>{item.name}</span>
-                                    <span className="tabular-nums">
-                                      {Math.round((item.value / total) * 100)}%
-                                    </span>
-                                  </div>
-                                  <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{ width: `${(item.value / total) * 100}%`, backgroundColor: item.color }}
-                                    />
-                                  </div>
-                                </div>
-                              ));
-                            })()
-                          ) : (
-                            <p className="text-xs text-muted-foreground italic text-center py-2">No data yet</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Friends/Groups Online Widget */}
-                    <FriendsOnline />
-
-                    <DDayManager />
+                  {/* Left Column: Timer - Aligned Left */}
+                  <div className="flex-1 flex flex-col items-start justify-start z-10 min-w-0">
+                    <StudyTimer
+                      onFocusMode={handleFocusMode}
+                      onSessionComplete={handleSessionComplete}
+                    />
                   </div>
-                </div>
-              </div>
-            )}
 
-            {currentView === 'subjects' && <SubjectsManager />}
-            {currentView === 'planner' && <Planner />}
-            {currentView === 'groups' && <GroupStudy />}
-            {currentView === 'rankings' && <Rankings />}
-            {currentView === 'analytics' && <Analytics />}
-            {currentView === 'settings' && <Settings />}
+                  {/* Right Column: Widgets - Restored */}
+                  <div className="w-full md:w-80 lg:w-96 flex flex-col gap-6 z-10 h-full overflow-y-auto pb-20 no-scrollbar">
+                    <div className="flex flex-col gap-6 opacity-90 hover:opacity-100 transition-opacity duration-300">
+
+                      {/* Stats Summary Widget */}
+                      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                        <CardContent className="p-6 space-y-4">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                              <TrendingUp className="w-5 h-5" />
+                            </div>
+                            <h3 className="font-bold text-sm uppercase tracking-wider">Daily Progress</h3>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Total Focus</p>
+                              <p className="text-2xl font-black tabular-nums">
+                                {Math.floor((todayStats?.totalStudyTime || 0) / 60)}<span className="text-sm font-normal text-muted-foreground ml-0.5">h</span> {(todayStats?.totalStudyTime || 0) % 60}<span className="text-sm font-normal text-muted-foreground ml-0.5">m</span>
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Streak</p>
+                              <p className="text-2xl font-black tabular-nums">{todayStats?.streak || 0} <span className="text-[10px] font-bold text-muted-foreground align-middle">DAYS</span></p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Focus Distribution Widget */}
+                      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                        <CardContent className="p-6 space-y-4">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                              <PieIcon className="w-5 h-5" />
+                            </div>
+                            <h3 className="font-bold text-sm uppercase tracking-wider">Distribution</h3>
+                          </div>
+                          <div className="space-y-3">
+                            {distData.length > 0 ? (
+                              (() => {
+                                const total = distData.reduce((acc, curr) => acc + curr.value, 0) || 1;
+                                return distData.slice(0, 4).map((item: any, index: number) => (
+                                  <div key={index} className="flex flex-col gap-1">
+                                    <div className="flex justify-between text-xs font-medium">
+                                      <span>{item.name}</span>
+                                      <span className="tabular-nums">
+                                        {Math.round((item.value / total) * 100)}%
+                                      </span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full"
+                                        style={{ width: `${(item.value / total) * 100}%`, backgroundColor: item.color }}
+                                      />
+                                    </div>
+                                  </div>
+                                ));
+                              })()
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic text-center py-2">No data yet</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Friends/Groups Online Widget */}
+                      <FriendsOnline />
+
+                      <DDayManager />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {currentView === 'subjects' && (
+                <motion.div key="subjects" initial="initial" animate="animate" exit="exit" variants={pageVariants} transition={{ duration: 0.2 }} className="p-6">
+                  <SubjectsManager />
+                </motion.div>
+              )}
+              {currentView === 'planner' && (
+                <motion.div key="planner" initial="initial" animate="animate" exit="exit" variants={pageVariants} transition={{ duration: 0.2 }} className="p-6">
+                  <Planner />
+                </motion.div>
+              )}
+              {currentView === 'groups' && (
+                <motion.div key="groups" initial="initial" animate="animate" exit="exit" variants={pageVariants} transition={{ duration: 0.2 }} className="p-6">
+                  <GroupStudy />
+                </motion.div>
+              )}
+              {currentView === 'rankings' && (
+                <motion.div key="rankings" initial="initial" animate="animate" exit="exit" variants={pageVariants} transition={{ duration: 0.2 }} className="p-6">
+                  <Rankings />
+                </motion.div>
+              )}
+              {currentView === 'analytics' && (
+                <motion.div key="analytics" initial="initial" animate="animate" exit="exit" variants={pageVariants} transition={{ duration: 0.2 }} className="p-6">
+                  <Analytics />
+                </motion.div>
+              )}
+              {currentView === 'settings' && (
+                <motion.div key="settings" initial="initial" animate="animate" exit="exit" variants={pageVariants} transition={{ duration: 0.2 }} className="p-6">
+                  <Settings />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </main>
         </div>
       )}

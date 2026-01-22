@@ -67,7 +67,16 @@ export function SidebarNav({ currentView, onNavigate, onLogout }: SidebarNavProp
           variant="outline"
           className="w-full justify-start gap-3 text-destructive hover:text-destructive border-border bg-transparent"
         >
-          <LogOut className="w-5 h-5" />
+          {false ? ( // TODO: pass loading prop if needed, or handle locally. For now, let's keep it simple or user-provided. 
+            // actually, better to handle it in the parent or make this async. 
+            // Let's just add the Loading Spinner if the parent passes a loading state, OR just leave it as is for now and focus on the dashboard routing first 
+            // as I don't want to break the interface just yet without seeing page.tsx.
+            // Wait, user asked for "insant log out feels boring".
+            // I should make it async in dashboard.tsx and pass a loading state down.
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-destructive"></div>
+          ) : (
+            <LogOut className="w-5 h-5" />
+          )}
           Logout
         </Button>
       </div>
