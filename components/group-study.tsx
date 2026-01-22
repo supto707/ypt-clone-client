@@ -448,6 +448,51 @@ export function GroupStudy() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const handleLeaveGroup = async () => {
+    if (!selectedGroup || !user) return;
+
+    if (confirm(`Are you sure you want to leave "${selectedGroup.name}"?`)) {
+      try {
+        await api.delete(`/groups/${selectedGroup._id}/members/${user._id}`);
+        toast.success('Left group successfully');
+        setSelectedGroup(null);
+        await fetchGroups();
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to leave group');
+      }
+    }
+  };
+
+  const handleEditGroupName = async () => {
+    if (!selectedGroup) return;
+
+    const newName = prompt('Enter new group name:', selectedGroup.name);
+    if (newName && newName.trim() && newName !== selectedGroup.name) {
+      try {
+        const response = await api.put(`/groups/${selectedGroup._id}`, { name: newName.trim() });
+        setSelectedGroup(response.data);
+        toast.success('Group name updated');
+        await fetchGroups();
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to update group name');
+      }
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!selectedGroup) return;
+
+    if (confirm(`Remove ${memberName} from the group?`)) {
+      try {
+        await api.delete(`/groups/${selectedGroup._id}/members/${memberId}`);
+        toast.success('Member removed');
+        await fetchMembers(selectedGroup._id);
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to remove member');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
@@ -470,12 +515,22 @@ export function GroupStudy() {
             </div>
           </div>
           <div className="flex gap-2">
+            {/* Check if current user is a leader */}
+            {members.find(m => m.userId._id === user?._id && m.role === 'leader') && (
+              <Button variant="outline" onClick={handleEditGroupName} className="gap-2">
+                <Shield className="w-4 h-4" />
+                Edit Name
+              </Button>
+            )}
             <Button variant="outline" onClick={copyInviteLink} className="gap-2">
               {copiedLink ? <Check className="w-4 h-4" /> : <Link className="w-4 h-4" />}
               {copiedLink ? 'Copied' : 'Invite'}
             </Button>
             <Button variant="secondary" onClick={() => fetchMembers(selectedGroup._id)}>
               Refresh
+            </Button>
+            <Button variant="destructive" onClick={handleLeaveGroup} className="gap-2">
+              Leave Group
             </Button>
           </div>
         </div>
@@ -704,16 +759,14 @@ export function GroupStudy() {
                         </div>
                       </div>
 
-                      {isAdmin && member.userId._id !== user?._id && (
+
+                      {/* Show remove button if current user is a leader and this is not themselves */}
+                      {members.find(m => m.userId._id === user?._id && m.role === 'leader') && member.userId._id !== user?._id && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="absolute -top-10 group-hover:top-2 right-2 h-8 w-8 text-destructive transition-all z-20"
-                          onClick={() => {
-                            if (confirm(`Remove ${member.userId.username} from group?`)) {
-                              api.delete(`/groups/${selectedGroup._id}/members/${member.userId._id}`).then(() => fetchMembers(selectedGroup._id));
-                            }
-                          }}
+                          onClick={() => handleRemoveMember(member.userId._id, member.userId.username)}
                         >
                           <UserPlus className="w-4 h-4 rotate-45" />
                         </Button>
