@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { SocketProvider } from '@/contexts/SocketContext'
+import { StudyProvider } from '@/contexts/StudyContext'
 import NextTopLoader from 'nextjs-toploader';
 import './globals.css'
 
@@ -43,7 +44,9 @@ export default function RootLayout({
         <NextTopLoader color="hsl(var(--primary))" showSpinner={false} />
         <AuthProvider>
           <SocketProvider>
-            {children}
+            <StudyProvider>
+              {children}
+            </StudyProvider>
           </SocketProvider>
         </AuthProvider>
         <Analytics />

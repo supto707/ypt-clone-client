@@ -14,6 +14,7 @@ interface User {
     gradeLevel: string;
     profilePic?: string;
     settings?: {
+        onboardingCompleted?: boolean;
         dailyGoalMinutes?: number;
         focusModeEnabled?: boolean;
         allowedSites?: string[];
@@ -117,6 +118,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem('user', JSON.stringify(userData));
         } catch (error: any) {
             console.error(`Social login failed for ${providerName}:`, error);
+            if (error.response) {
+                console.error('Data:', error.response.data);
+                console.error('Status:', error.response.status);
+            } else if (error.request) {
+                console.error('Request was made but no response was received:', error.request);
+            } else {
+                console.error('Error setting up request:', error.message);
+            }
             throw new Error(error.response?.data?.message || `${providerName} login failed`);
         }
     };

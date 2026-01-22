@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/hooks/useSocket';
 import { SidebarNav } from '@/components/sidebar-nav';
@@ -15,20 +15,20 @@ import { SubjectsManager } from '@/components/subjects-manager';
 import { GroupStudy } from '@/components/group-study';
 import { Rankings } from '@/components/rankings';
 import { Analytics } from '@/components/analytics';
-import { Planner } from '@/components/planner';
+
 import { Settings } from '@/components/settings';
 import { DDayManager } from '@/components/d-day';
 import { PresenceManager } from '@/components/presence-manager';
 import { FriendsOnline } from '@/components/friends-online';
 import { PinnedTimer } from '@/components/pinned-timer';
 import { TrendingUp, Users, Target, Clock, Calendar, Zap, Award, Flame, PieChart as PieIcon } from 'lucide-react';
+import { OnboardingFlow } from '@/components/onboarding-flow';
 import api from '@/lib/api';
 
 type AppView =
   | 'dashboard'
   | 'focus'
   | 'subjects'
-  | 'planner'
   | 'groups'
   | 'rankings'
   | 'analytics'
@@ -36,18 +36,43 @@ type AppView =
 
 // Landing Page Component
 function LandingPage() {
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 font-sans selection:bg-primary/20">
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex items-center gap-2"
+          >
             <div className="relative">
               <Clock className="w-6 h-6 text-primary" />
               <span className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full animate-pulse border border-background"></span>
             </div>
             <span className="text-xl font-bold tracking-tight">YPT</span>
-          </div>
+          </motion.div>
           <nav className="flex items-center gap-4">
             <Link href="/login">
               <Button variant="ghost" className="font-medium">Sign In</Button>
@@ -64,22 +89,28 @@ function LandingPage() {
         {/* Abstract Background Elements */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[100px] -z-10 animate-pulse" />
 
-        <div className="max-w-4xl mx-auto space-y-8 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/50 border border-border/50 backdrop-blur-sm mb-4">
+        <motion.div
+          className="max-w-4xl mx-auto space-y-8 relative z-10"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={containerVariants}
+        >
+          <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/50 border border-border/50 backdrop-blur-sm mb-4">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">12,405 Students Focusing Live</span>
-          </div>
+          </motion.div>
 
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none">
+          <motion.h1 variants={itemVariants} className="text-6xl md:text-8xl font-black tracking-tighter leading-none">
             Don't Study <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-primary/50">Alone.</span>
-          </h1>
+          </motion.h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
+          <motion.p variants={itemVariants} className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
             Join the largest real-time study community. See who's online, challenge your friends, and stay accountable together.
-          </p>
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
             <Link href="/register">
               <Button size="lg" className="h-14 px-10 text-lg rounded-full font-bold shadow-xl shadow-primary/20 hover:scale-105 transition-all">
                 Join a Group Study
@@ -90,104 +121,134 @@ function LandingPage() {
                 Explore Public Groups
               </Button>
             </Link>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* Features Grid - Reordered for Social Focus */}
       <section className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16">
+        <motion.div
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
           <h2 className="text-4xl font-bold mb-4 tracking-tight">Study Together, Miles Apart</h2>
           <p className="text-muted-foreground text-xl max-w-2xl mx-auto">
             Experience the motivation of a library from your bedroom.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <motion.div
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={containerVariants}
+        >
           {/* Card 1: Real-time Groups (Priority) */}
-          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
-            <CardContent className="pt-8 p-8">
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                <Users className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3">Live Study Groups</h3>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                See your friends' status in real-time. Are they studying? Sleeping? Join their room and get motivated instantly.
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="h-full border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+              <CardContent className="pt-8 p-8">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                  <Users className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Live Study Groups</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  See your friends' status in real-time. Are they studying? Sleeping? Join their room and get motivated instantly.
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Card 2: Rankings (Competition) */}
-          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
-            <CardContent className="pt-8 p-8">
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                <TrendingUp className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3">Compete & Climb</h3>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Check the daily, weekly, and monthly leaderboards. Friendly competition is the best accountability partner.
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="h-full border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+              <CardContent className="pt-8 p-8">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                  <TrendingUp className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Compete & Climb</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  Check the daily, weekly, and monthly leaderboards. Friendly competition is the best accountability partner.
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Card 3: Focus Status (Presence) */}
-          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
-            <CardContent className="pt-8 p-8">
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                <Flame className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3">Real-time Accountability</h3>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                The "Focus Mode" status lets everyone know you're serious. Don't be the one ending your session early!
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="h-full border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+              <CardContent className="pt-8 p-8">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                  <Flame className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Real-time Accountability</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  The "Focus Mode" status lets everyone know you're serious. Don't be the one ending your session early!
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Card 4: Detailed Stats (Utility) */}
-          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
-            <CardContent className="pt-8 p-8">
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                <PieIcon className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3">Visual Insights</h3>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Track your study patterns. See exactly how much time you spent on Math vs. History compared to your group.
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="h-full border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+              <CardContent className="pt-8 p-8">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                  <PieIcon className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Visual Insights</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  Track your study patterns. See exactly how much time you spent on Math vs. History compared to your group.
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Card 5: D-Day (Goal) */}
-          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
-            <CardContent className="pt-8 p-8">
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                <Calendar className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3">Shared Goals</h3>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Set D-Days for exams and see your group's collective countdown. We're all in this together.
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="h-full border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+              <CardContent className="pt-8 p-8">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                  <Calendar className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Shared Goals</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  Set D-Days for exams and see your group's collective countdown. We're all in this together.
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Card 6: Mobile (Convenience) */}
-          <Card className="border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
-            <CardContent className="pt-8 p-8">
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                <Award className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3">Gamified Focus</h3>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Earn badges and consistency streaks. Make studying addictive (in a good way).
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="h-full border-border/50 bg-card/50 backdrop-blur hover:border-primary/50 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300">
+              <CardContent className="pt-8 p-8">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                  <Award className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Gamified Focus</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  Earn badges and consistency streaks. Make studying addictive (in a good way).
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-        </div>
+        </motion.div>
       </section>
 
       {/* Social Proof Stats */}
       <section className="container mx-auto px-4 py-20 mb-20">
-        <div className="bg-primary/5 rounded-3xl p-12 md:p-20 text-center">
+        <motion.div
+          className="bg-primary/5 rounded-3xl p-12 md:p-20 text-center"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+        >
           <h2 className="text-3xl md:text-4xl font-bold mb-12">Join the Movement</h2>
           <div className="grid md:grid-cols-3 gap-12">
             <div className="space-y-2">
@@ -203,7 +264,7 @@ function LandingPage() {
               <div className="text-xl font-medium text-muted-foreground uppercase tracking-widest">Active Groups</div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Footer */}
@@ -230,6 +291,13 @@ function Dashboard() {
   const [todayStats, setTodayStats] = useState<any>(null);
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (user && !user.settings?.onboardingCompleted) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -322,6 +390,7 @@ function Dashboard() {
     <div>
       <PresenceManager />
       <PinnedTimer />
+      {showOnboarding && <OnboardingFlow onComplete={() => setShowOnboarding(false)} />}
       {currentView === 'focus' && <FocusMode onExit={handleExitFocusMode} />}
 
       {currentView !== 'focus' && (
@@ -432,11 +501,6 @@ function Dashboard() {
               {currentView === 'subjects' && (
                 <motion.div key="subjects" initial="initial" animate="animate" exit="exit" variants={pageVariants} transition={{ duration: 0.2 }} className="p-6">
                   <SubjectsManager />
-                </motion.div>
-              )}
-              {currentView === 'planner' && (
-                <motion.div key="planner" initial="initial" animate="animate" exit="exit" variants={pageVariants} transition={{ duration: 0.2 }} className="p-6">
-                  <Planner />
                 </motion.div>
               )}
               {currentView === 'groups' && (

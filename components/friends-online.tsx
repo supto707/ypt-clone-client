@@ -72,7 +72,7 @@ export function FriendsOnline() {
             socket.emit('getGroupStatus', data.groupId);
         };
 
-        const handleUserLeft = (data: { userId: string }) => {
+        const handleUserLeft = (data: { userId: string; groupId: string }) => {
             // Only remove if they are not in any other of my groups (complex check, simplified: remove and let refresh handle?)
             // Safer: Modify status to offline? Or just remove.
             // For accurate tracking, we'd need to know which group they left.

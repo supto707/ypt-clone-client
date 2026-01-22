@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Users, Search, UserPlus, Link, Copy, Check, ExternalLink, ArrowLeft, Loader2, MessageSquare, Send, Trophy, Zap, Clock, Globe, Lock, Shield, Flame } from 'lucide-react';
@@ -59,13 +60,62 @@ export function GroupStudy() {
   const [loading, setLoading] = useState(true);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const chatEndRef = useCallback((node: HTMLDivElement | null) => {
+  const chatEndRefCallback = useCallback((node: HTMLDivElement | null) => {
     if (node) {
       node.scrollIntoView({ behavior: 'smooth' });
     }
   }, []);
   const [copiedLink, setCopiedLink] = useState(false);
   const [activeTab, setActiveTab] = useState<'hall' | 'chat' | 'rankings'>('hall');
+  const [typingUsers, setTypingUsers] = useState<Record<string, string>>({});
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('userTyping', (data: { userId: string, username: string, isTyping: boolean }) => {
+        setTypingUsers(prev => {
+          const next = { ...prev };
+          if (data.isTyping) {
+            next[data.userId] = data.username;
+          } else {
+            delete next[data.userId];
+          }
+          return next;
+        });
+      });
+
+      socket.on('groupAnnouncement', (data: any) => {
+        setAnnouncements(prev => [...prev, data]);
+      });
+
+      return () => {
+        socket.off('userTyping');
+        socket.off('groupAnnouncement');
+      };
+    }
+  }, [socket]);
+
+  const handleTyping = () => {
+    if (!socket || !selectedGroup || !user) return;
+
+    socket.emit('typing', {
+      groupId: selectedGroup._id,
+      username: user.username,
+      isTyping: true
+    });
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit('typing', {
+        groupId: selectedGroup._id,
+        username: user.username,
+        isTyping: false
+      });
+    }, 3000);
+  };
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [showAdminTools, setShowAdminTools] = useState(false);
@@ -116,6 +166,13 @@ export function GroupStudy() {
     if (socket && selectedGroup) {
       socket.emit('joinGroup', selectedGroup._id);
       // We don't call getGroupStatus here anymore; fetchMembers will call it to avoid race conditions
+
+      // Set up periodic polling for real-time status updates
+      const statusInterval = setInterval(() => {
+        if (socket && connected && selectedGroup) {
+          socket.emit('getGroupStatus', selectedGroup._id);
+        }
+      }, 5000); // Poll every 5 seconds
 
       socket.on('userStartedStudying', (data: any) => {
         console.log('Socket: userStartedStudying', data);
@@ -216,6 +273,7 @@ export function GroupStudy() {
       });
 
       return () => {
+        clearInterval(statusInterval);
         socket.emit('leaveGroup', selectedGroup._id);
         socket.off('userStartedStudying');
         socket.off('userStoppedStudying');
@@ -610,6 +668,12 @@ export function GroupStudy() {
                             <p className={`font-black truncate ${member.isStudying ? 'text-primary' : 'text-muted-foreground'}`}>
                               {member.userId.username}
                             </p>
+                            {member.role === 'leader' && (
+                              <div className="flex items-center gap-1 bg-primary/20 text-primary px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border border-primary/20">
+                                <Shield className="w-2 h-2" />
+                                Admin
+                              </div>
+                            )}
                             {member.isStudying && (member.studyDuration || 0) > 3600 && (
                               <Flame className="w-3 h-3 text-orange-500 fill-orange-500 animate-pulse" />
                             )}
@@ -663,6 +727,14 @@ export function GroupStudy() {
             {activeTab === 'chat' && (
               <Card className="h-[500px] flex flex-col shadow-xl border-primary/10">
                 <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {announcements.map((ann, i) => (
+                    <div key={`ann-${i}`} className="flex justify-center my-4 animate-in fade-in slide-in-from-bottom-2">
+                      <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20 bg-primary/5 text-primary flex items-center gap-2`}>
+                        <Zap className="w-3 h-3 fill-primary" />
+                        {ann.message}
+                      </div>
+                    </div>
+                  ))}
                   {messages.map((msg, i) => (
                     <div key={i} className={`flex flex-col ${msg.userId === user?._id ? 'items-end' : 'items-start'}`}>
                       <span className="text-[10px] font-bold text-muted-foreground mb-1 px-2">{msg.username}</span>
@@ -674,17 +746,32 @@ export function GroupStudy() {
                       </div>
                     </div>
                   ))}
+                  {Object.keys(typingUsers).length > 0 && (
+                    <div className="flex items-center gap-2 px-2 animate-pulse">
+                      <div className="flex gap-1">
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
+                      </div>
+                      <span className="text-[10px] font-bold text-muted-foreground italic">
+                        {Object.values(typingUsers).join(', ')} {Object.keys(typingUsers).length === 1 ? 'is' : 'are'} typing...
+                      </span>
+                    </div>
+                  )}
                   <div ref={chatEndRef} />
                 </CardContent>
-                <div className="p-4 border-t flex gap-2 bg-muted/30">
+                <div className="p-4 border-t flex gap-2 bg-muted/30 relative">
                   <Input
                     placeholder="Message members..."
                     value={chatInput || ''}
-                    onChange={(e) => setChatInput(e.target.value)}
+                    onChange={(e) => {
+                      setChatInput(e.target.value);
+                      handleTyping();
+                    }}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    className="bg-background border-none shadow-inner"
+                    className="bg-background border-none shadow-inner pr-12"
                   />
-                  <Button size="icon" onClick={handleSendMessage} className="rounded-full">
+                  <Button size="icon" onClick={handleSendMessage} className="rounded-full flex-shrink-0">
                     <Send className="w-4 h-4" />
                   </Button>
                 </div>
@@ -758,48 +845,71 @@ export function GroupStudy() {
           </CardHeader>
           <CardContent>
             {showCreateForm ? (
-              <div className="space-y-4 pb-4">
-                <Input
-                  placeholder="Group name..."
-                  value={newGroupName || ''}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                />
-                <Input
-                  placeholder="Description (optional)..."
-                  value={newGroupDesc || ''}
-                  onChange={(e) => setNewGroupDesc(e.target.value)}
-                />
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6 pb-4">
+                <div className="space-y-2">
+                  <Label>Group Name</Label>
                   <Input
-                    placeholder="Group Rules (optional)..."
-                    value={groupRules || ''}
-                    onChange={(e) => setGroupRules(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Timezone (e.g. UTC)"
-                    value={groupTZ || ''}
-                    onChange={(e) => setGroupTZ(e.target.value)}
+                    placeholder="e.g. Morning Focus Club"
+                    value={newGroupName || ''}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    className="h-12 font-bold"
                   />
                 </div>
-                <div className="flex items-center gap-2 px-1">
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Input
+                    placeholder="What is this group about?"
+                    value={newGroupDesc || ''}
+                    onChange={(e) => setNewGroupDesc(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Group Rules</Label>
+                    <Input
+                      placeholder="e.g. No phones Allowed"
+                      value={groupRules || ''}
+                      onChange={(e) => setGroupRules(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Preferred Timezone</Label>
+                    <Input
+                      placeholder="e.g. UTC"
+                      value={groupTZ || ''}
+                      onChange={(e) => setGroupTZ(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-2xl border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-background rounded-lg border">
+                      <Globe className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">Public Presence</p>
+                      <p className="text-[10px] text-muted-foreground">Allow others to find this group</p>
+                    </div>
+                  </div>
                   <input
                     type="checkbox"
                     id="isPublic"
-                    className="w-4 h-4 rounded border-border"
+                    className="w-5 h-5 rounded-md border-border accent-primary cursor-pointer"
                     defaultChecked={true}
                   />
-                  <label htmlFor="isPublic" className="text-sm font-medium">Public Group</label>
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
-                    Create Group
+                <div className="flex gap-3 pt-4">
+                  <Button onClick={handleCreateGroup} disabled={!newGroupName.trim()} className="flex-1 h-12 font-bold uppercase tracking-widest shadow-lg shadow-primary/20">
+                    Create Group Now
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    className="h-12"
                     onClick={() => {
                       setShowCreateForm(false);
                       setNewGroupName('');
                       setNewGroupDesc('');
+                      setGroupRules('');
                     }}
                   >
                     Cancel
@@ -829,9 +939,20 @@ export function GroupStudy() {
                         </div>
                         <h3 className="font-bold text-lg">{group.name}</h3>
                       </div>
-                      <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">
-                        {group.memberCount || 0} members
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">
+                          {group.memberCount || 0} members
+                        </span>
+                        {group.isPublic ? (
+                          <span className="text-[8px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded font-black uppercase tracking-tighter border border-green-500/20 flex items-center gap-1">
+                            <Globe className="w-2 h-2" /> Public
+                          </span>
+                        ) : (
+                          <span className="text-[8px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded font-black uppercase tracking-tighter border border-orange-500/20 flex items-center gap-1">
+                            <Lock className="w-2 h-2" /> Private
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{group.description || 'No description provided.'}</p>
                   </div>

@@ -13,7 +13,6 @@ interface SidebarNavProps {
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Clock },
   { id: 'subjects', label: 'Subjects', icon: BookOpen },
-  { id: 'planner', label: 'Planner', icon: Calendar },
   { id: 'groups', label: 'Groups', icon: Users },
   { id: 'rankings', label: 'Rankings', icon: Trophy },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
