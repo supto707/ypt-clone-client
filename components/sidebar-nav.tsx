@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, BookOpen, Users, BarChart3, Settings, LogOut } from 'lucide-react';
+import { Clock, BookOpen, Users, BarChart3, Settings, LogOut, Calendar, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +13,9 @@ interface SidebarNavProps {
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Clock },
   { id: 'subjects', label: 'Subjects', icon: BookOpen },
+  { id: 'planner', label: 'Planner', icon: Calendar },
   { id: 'groups', label: 'Groups', icon: Users },
+  { id: 'rankings', label: 'Rankings', icon: Trophy },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];

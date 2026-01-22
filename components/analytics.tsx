@@ -1,59 +1,115 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Calendar, TrendingUp } from 'lucide-react';
-
-const weeklyData = [
-  { day: 'Mon', hours: 2.5, sessions: 5 },
-  { day: 'Tue', hours: 3, sessions: 6 },
-  { day: 'Wed', hours: 2.8, sessions: 5 },
-  { day: 'Thu', hours: 3.2, sessions: 7 },
-  { day: 'Fri', hours: 2.1, sessions: 4 },
-  { day: 'Sat', hours: 4, sessions: 8 },
-  { day: 'Sun', hours: 1.5, sessions: 3 },
-];
-
-const subjectData = [
-  { name: 'Mathematics', value: 45, color: 'hsl(var(--color-primary))' },
-  { name: 'English', value: 30, color: 'hsl(var(--color-accent))' },
-  { name: 'Science', value: 15, color: 'hsl(var(--color-chart-1))' },
-  { name: 'History', value: 10, color: 'hsl(var(--color-chart-2))' },
-];
-
-const monthlyData = [
-  { week: 'Week 1', hours: 12 },
-  { week: 'Week 2', hours: 18 },
-  { week: 'Week 3', hours: 15 },
-  { week: 'Week 4', hours: 22 },
-];
-
-const heatmapData = [
-  { day: 'Mon', '9am': 2, '10am': 1, '2pm': 3, '6pm': 1 },
-  { day: 'Tue', '9am': 2, '10am': 2, '2pm': 2, '6pm': 2 },
-  { day: 'Wed', '9am': 1, '10am': 3, '2pm': 1, '6pm': 3 },
-  { day: 'Thu', '9am': 3, '10am': 1, '2pm': 2, '6pm': 1 },
-  { day: 'Fri', '9am': 1, '10am': 1, '2pm': 3, '6pm': 2 },
-];
+import { Calendar, TrendingUp, BarChart3, Download, FileJson, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
 export function Analytics() {
-  const [timeframe, setTimeframe] = useState<'week' | 'month' | 'year'>('week');
+  const [timeframe, setTimeframe] = useState<'week' | 'month'>('week');
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [heatmapData, setHeatmapData] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchAnalytics();
+    fetchHeatmapData();
+  }, [timeframe]);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      const days = timeframe === 'week' ? 7 : 30;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const response = await api.get('/stats', {
+        params: {
+          startDate: startDate.toISOString(),
+          endDate: new Date().toISOString()
+        }
+      });
+
+      const data = response.data.calendarData.map((day: any) => ({
+        day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        hours: (day.totalMinutes / 60).toFixed(1),
+        sessions: day.sessionCount
+      }));
+
+      setChartData(data);
+      setStats(response.data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchHeatmapData = async () => {
+    try {
+      // Fetch last 6 months for heatmap
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 6);
+      const response = await api.get('/stats', {
+        params: {
+          startDate: startDate.toISOString(),
+          endDate: new Date().toISOString()
+        }
+      });
+      setHeatmapData(response.data.calendarData);
+    } catch (error) {
+      console.error('Heatmap error:', error);
+    }
+  };
+
+  const exportToCSV = () => {
+    if (!stats || !stats.calendarData) return;
+
+    const headers = ['Date', 'Total Minutes', 'Total Hours', 'Sessions'];
+    const rows = stats.calendarData.map((d: any) => [
+      d.date.split('T')[0],
+      d.totalMinutes,
+      (d.totalMinutes / 60).toFixed(2),
+      d.sessionCount
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `study_report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Report exported to CSV');
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  const totalHours = parseFloat(stats?.totalHours || 0);
+  const totalSessions = stats?.totalSessions || 0;
+  const avgSession = totalSessions > 0 ? (parseFloat(stats?.totalMinutes || 0) / totalSessions).toFixed(0) : 0;
 
   return (
     <div className="p-8">
@@ -63,218 +119,189 @@ export function Analytics() {
             <h1 className="text-3xl font-bold text-foreground mb-2">Analytics</h1>
             <p className="text-muted-foreground">Track your study progress and performance</p>
           </div>
-          <div className="flex gap-2">
-            {(['week', 'month', 'year'] as const).map((tf) => (
-              <Button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                variant={timeframe === tf ? 'default' : 'outline'}
-                size="sm"
-                className={timeframe === tf ? 'bg-primary' : 'border-border'}
-              >
-                {tf.charAt(0).toUpperCase() + tf.slice(1)}
-              </Button>
-            ))}
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
+            <div className="flex bg-muted p-1 rounded-lg">
+              {(['week', 'month'] as const).map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${timeframe === tf
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                >
+                  {tf.charAt(0).toUpperCase() + tf.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl">
+      <div className="max-w-6xl space-y-8">
+        {/* Heatmap Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Activity Heatmap
+            </CardTitle>
+            <CardDescription>Visual representation of your study frequency over the last 6 months</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto pb-4">
+              <div className="flex gap-1 min-w-[800px]">
+                {/* Simplified heatmap grid */}
+                {Array.from({ length: 30 }).map((_, weekIndex) => (
+                  <div key={weekIndex} className="flex flex-col gap-1">
+                    {Array.from({ length: 7 }).map((_, dayIndex) => {
+                      const date = new Date();
+                      date.setDate(date.getDate() - (209 - (weekIndex * 7 + dayIndex)));
+                      const dateStr = date.toISOString().split('T')[0];
+                      const dayData = heatmapData.find(d => d.date.startsWith(dateStr));
+                      const minutes = dayData?.totalMinutes || 0;
+
+                      // Intensity colors
+                      let color = 'bg-muted/30';
+                      if (minutes > 0 && minutes < 60) color = 'bg-primary/20';
+                      else if (minutes >= 60 && minutes < 180) color = 'bg-primary/40';
+                      else if (minutes >= 180 && minutes < 360) color = 'bg-primary/70';
+                      else if (minutes >= 360) color = 'bg-primary';
+
+                      return (
+                        <div
+                          key={dayIndex}
+                          title={`${dateStr}: ${minutes} mins`}
+                          className={`w-3.5 h-3.5 rounded-sm ${color} hover:ring-2 hover:ring-primary/50 transition-all cursor-crosshair`}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between mt-4 text-[10px] text-muted-foreground font-mono uppercase tracking-widest px-1">
+                <span>6 Months Ago</span>
+                <span>Today</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Total Hours', value: '18.6h', trend: '+12%' },
-            { label: 'Sessions', value: '28', trend: '+5' },
-            { label: 'Avg Session', value: '40m', trend: '+2m' },
-            { label: 'Consistency', value: '86%', trend: '+4%' },
-          ].map((metric, idx) => (
-            <Card key={idx}>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground mb-1">{metric.label}</p>
-                <div className="flex items-end justify-between">
-                  <div className="text-3xl font-bold text-foreground">{metric.value}</div>
-                  <div className="text-sm font-medium text-primary">{metric.trend}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">Total Hours</p>
+              <div className="text-3xl font-bold text-primary">{totalHours.toFixed(1)}h</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">Total Sessions</p>
+              <div className="text-3xl font-bold">{totalSessions}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">Avg Session</p>
+              <div className="text-3xl font-bold">{avgSession}m</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">Focus Days</p>
+              <div className="text-3xl font-bold">{heatmapData.filter(d => d.totalMinutes > 0).length}</div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Daily Study Hours */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Study Hours Chart */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Weekly Study Hours
+                Study Hours Distribution
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--color-border))" />
-                  <XAxis dataKey="day" stroke="hsl(var(--color-muted-foreground))" />
-                  <YAxis stroke="hsl(var(--color-muted-foreground))" />
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--color-border))" />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--color-muted-foreground))"
+                    tick={{ fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--color-muted-foreground))"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10 }}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--color-card))',
                       border: '1px solid hsl(var(--color-border))',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                     }}
-                    formatter={(value) => `${value}h`}
+                    cursor={{ fill: 'hsl(var(--color-muted)/0.5)' }}
+                    formatter={(value) => [`${value} hours`, 'Studied']}
                   />
-                  <Bar dataKey="hours" fill="hsl(var(--color-primary))" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="hours" fill="hsl(var(--color-primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          {/* Subject Distribution */}
+          {/* Subject Breakdown */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Subject Distribution</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie data={subjectData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value">
-                    {subjectData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--color-card))',
-                      border: '1px solid hsl(var(--color-border))',
-                    }}
-                    formatter={(value) => `${value}%`}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex gap-4 mt-4 flex-wrap justify-center">
-                {subjectData.map((subject) => (
-                  <div key={subject.name} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: subject.color }} />
-                    <span className="text-sm text-foreground">{subject.name}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Monthly Trend */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Monthly Progress
-              </CardTitle>
+              <CardTitle className="text-base">Target vs Reality</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--color-border))" />
-                  <XAxis dataKey="week" stroke="hsl(var(--color-muted-foreground))" />
-                  <YAxis stroke="hsl(var(--color-muted-foreground))" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--color-card))',
-                      border: '1px solid hsl(var(--color-border))',
-                    }}
-                    formatter={(value) => `${value}h`}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="hours"
-                    stroke="hsl(var(--color-primary))"
-                    strokeWidth={3}
-                    dot={{ fill: 'hsl(var(--color-primary))' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Study Heatmap */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Study Time Heatmap</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {heatmapData.map((row) => (
-                  <div key={row.day}>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">{row.day}</p>
-                    <div className="flex gap-2">
-                      {['9am', '10am', '2pm', '6pm'].map((time) => (
-                        <div
-                          key={`${row.day}-${time}`}
-                          className="flex-1 h-12 rounded bg-muted hover:bg-primary/20 transition-colors flex items-center justify-center"
-                          style={{
-                            backgroundColor: `rgba(var(--color-primary-rgb), ${row[time as keyof typeof row] / 5})`,
-                          }}
-                        >
-                          <span className="text-xs font-semibold text-foreground">
-                            {row[time as keyof typeof row]}
-                          </span>
-                        </div>
-                      ))}
+              <div className="space-y-6">
+                {stats?.subjectStats && stats.subjectStats.map((subject: any) => (
+                  <div key={subject.subjectId} className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: subject.color }} />
+                        <span className="font-bold text-sm">{subject.title}</span>
+                      </div>
+                      <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded">
+                        {(subject.totalMinutes / 60).toFixed(1)}h
+                      </span>
+                    </div>
+                    <div className="relative w-full h-3 bg-secondary rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(subject.totalMinutes / (parseFloat(stats.totalMinutes) || 1)) * 100}%` }}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: subject.color }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-muted-foreground font-medium uppercase">
+                      <span>{subject.sessionCount} Sessions</span>
+                      <span>{Math.round((subject.totalMinutes / (parseFloat(stats.totalMinutes) || 1)) * 100)}% of total</span>
                     </div>
                   </div>
                 ))}
+                {(!stats?.subjectStats || stats.subjectStats.length === 0) && (
+                  <div className="text-center py-12 text-muted-foreground italic">
+                    No subject data available for this period.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Subject Breakdown Table */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-base">Subject Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left font-medium text-foreground py-3">Subject</th>
-                    <th className="text-right font-medium text-foreground py-3">Hours</th>
-                    <th className="text-right font-medium text-foreground py-3">Sessions</th>
-                    <th className="text-right font-medium text-foreground py-3">Avg Time</th>
-                    <th className="text-right font-medium text-foreground py-3">Progress</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { subject: 'Mathematics', hours: 8.4, sessions: 12, avg: 42, progress: 95 },
-                    { subject: 'English', hours: 5.6, sessions: 10, avg: 34, progress: 72 },
-                    { subject: 'Science', hours: 3.2, sessions: 5, avg: 38, progress: 48 },
-                    { subject: 'History', hours: 1.4, sessions: 1, avg: 84, progress: 18 },
-                  ].map((row) => (
-                    <tr key={row.subject} className="border-b border-border hover:bg-muted/50">
-                      <td className="py-3 text-foreground">{row.subject}</td>
-                      <td className="text-right text-foreground">{row.hours}h</td>
-                      <td className="text-right text-muted-foreground">{row.sessions}</td>
-                      <td className="text-right text-muted-foreground">{row.avg}m</td>
-                      <td className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-12 bg-secondary rounded-full h-2">
-                            <div
-                              className="bg-primary h-full rounded-full"
-                              style={{ width: `${row.progress}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-medium text-primary">{row.progress}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-          </table>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

@@ -2,15 +2,16 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { SocketProvider } from '@/contexts/SocketContext'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'StudyTimer - Focus. Learn. Succeed.',
-  description: 'A modern, minimal study timer application with Pomodoro sessions, progress tracking, and group study features.',
-  generator: 'v0.app',
+  title: 'YPT - Study Timer & Productivity',
+  description: 'Track your study time, join study groups, and compete with friends. Stay focused and productive with YPT.',
   icons: {
     icon: [
       {
@@ -36,9 +37,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`font-sans antialiased`}>
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`font-sans antialiased`} suppressHydrationWarning>
+        <AuthProvider>
+          <SocketProvider>
+            {children}
+          </SocketProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>

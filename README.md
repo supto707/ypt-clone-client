@@ -1,30 +1,31 @@
-# Study timer UI
+# YPT - Study Timer & Productivity
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+Track your study time, join study groups, and compete with friends. Stay focused and productive with YPT.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/supto707s-projects/v0-study-timer-ui)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/p0wGUz88HM4)
+## Features
 
-## Overview
+- **Study Timer**: Track your study sessions with precision.
+- **Study Groups**: Join or create groups to study together.
+- **Rankings**: Compete with friends and stay motivated.
+- **Presence Management**: See who is studying in real-time.
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Tech Stack
 
-## Deployment
+- **Frontend**: Next.js, React, Tailwind CSS, Lucide React, Recharts.
+- **Backend**: Express.js, Socket.io (for real-time updates).
+- **Authentication**: Firebase Auth.
 
-Your project is live at:
+## Getting Started
 
-**[https://vercel.com/supto707s-projects/v0-study-timer-ui](https://vercel.com/supto707s-projects/v0-study-timer-ui)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/p0wGUz88HM4](https://v0.app/chat/p0wGUz88HM4)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+1.  **Clone the repository**:
+    ```bash
+    git clone <repository-url>
+    ```
+2.  **Install dependencies**:
+    ```bash
+    cd client && npm install
+    cd ../server && npm install
+    ```
+3.  **Run the development server**:
+    - **Client**: `npm run dev` (in the `client` directory)
+    - **Server**: `npm start` (in the `server` directory)
