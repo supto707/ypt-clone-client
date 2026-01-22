@@ -2,9 +2,12 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+// Ensure no trailing slash
+const validApiUrl = API_URL.replace(/\/$/, '');
+
 // Create axios instance
 const api = axios.create({
-    baseURL: `${API_URL}/api`,
+    baseURL: `${validApiUrl}/api`,
     headers: {
         'Content-Type': 'application/json',
     },
